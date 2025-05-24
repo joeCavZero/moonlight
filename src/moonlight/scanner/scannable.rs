@@ -29,11 +29,15 @@ impl Scannable for Moonlight {
 
         let mut tokens = match scan_tokens_from_file(file_path, file_id) {
             Ok(tokens) => tokens,
-            Err(_) => {
-                self.exit_with_error(&format!(
-                    "The file {} does not exist or could not be read",
-                    file_path
-                ));
+            Err((e, p)) => {
+                match p {
+                    Some(position) => {
+                        self.exit_with_positional_error(&e, &position);
+                    }
+                    None => {
+                        self.exit_with_error(&e);
+                    }
+                }
                 return Vec::new();
             }
         };
