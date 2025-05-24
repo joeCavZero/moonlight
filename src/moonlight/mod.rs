@@ -1,5 +1,5 @@
 pub mod moonlight;
 pub mod utils;
 pub mod debug;
-pub mod front;
+pub mod scanner;
 pub use moonlight::Moonlight;

@@ -1,5 +1,6 @@
-use super::token::{PositionedToken, Token};
 use crate::moonlight::utils::*;
+
+use super::traits::*;
 
 fn read_file(path: &str) -> Result<String, String> {
     use std::fs;
@@ -23,22 +24,6 @@ pub fn scan_tokens_from_file(file_path: &str, file_id: u32) -> Result<Vec<Positi
         scan_string_and_generate_positioned_tokens(&raw, file_id)
     )
 } 
-
-trait PositionedTokenVectorTrait {
-    fn contexted_push(&mut self, token_string: String, file_id: u32, line: u32, column: Option<u32>);
-}
-
-impl PositionedTokenVectorTrait for Vec<PositionedToken> {
-    fn contexted_push(&mut self, token_string: String, file_id: u32, line: u32, column: Option<u32>) {
-        let token = Token::from_string(&token_string);
-        let position = Position::new(file_id, line, column);
-        let positioned_token = PositionedToken {
-            token,
-            position
-        };
-        self.push(positioned_token);
-    }
-}
 
 
 
