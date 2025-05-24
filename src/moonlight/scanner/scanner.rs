@@ -1,6 +1,6 @@
 use crate::moonlight::utils::*;
 
-use super::traits::*;
+use super::positioned_token_trait::*;
 
 fn read_file(path: &str) -> Result<String, String> {
     use std::fs;
