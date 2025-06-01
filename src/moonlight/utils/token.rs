@@ -1,11 +1,11 @@
 use super::{directive::Directive, instruction::Instruction, number::Number, pseudo_instruction::PseudoInstruction};
 use crate::moonlight::utils::*;
 
-trait TokenStringTrait {
+trait TokenStringable {
     fn processed_string(&self) -> String;
 }
 
-impl TokenStringTrait for String {
+impl TokenStringable for String {
     fn processed_string(&self) -> String {
         let mut result = String::new();
         let mut chars = self.chars().peekable();

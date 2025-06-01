@@ -9,7 +9,7 @@ pub trait Parseable {
     fn parse(&mut self, tokens: &Vec<PositionedToken>) -> Ast;
 
     fn read_comma_separated_tokens(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> Vec<PositionedToken>;
-    fn read_lw_sw_format_tokens(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> Vec<PositionedToken>;
+    fn read_lw_sw_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg;
 }
 
 impl Parseable for Moonlight {
@@ -77,7 +77,7 @@ impl Parseable for Moonlight {
                                 Token::PseudoInstruction(ref psinstr) => {
                                     match psinstr {
                                         PseudoInstruction::Lw | PseudoInstruction::Sw => {
-                                            let lw_sw_tokens = self.read_lw_sw_format_tokens(&tokens, ptk_index + 1);
+                                            let lw_sw_tokens = self.read_lw_sw_format(&tokens, ptk_index + 1);
                                             instr_field.push(
                                                 InstrCamp::new(
                                                     label_declarations_accumulator.clone(),
@@ -134,7 +134,7 @@ impl Parseable for Moonlight {
         result
     }
 
-    fn read_lw_sw_format_tokens(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> Vec<PositionedToken> {
+    fn read_lw_sw_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg {
         /*
             PositionedToken { token: Accumulator(Ac0), position: Position { file: 0, line: 4, column: Some(12) } }
             PositionedToken { token: Comma, position: Position { file: 0, line: 4, column: Some(12) } }
@@ -176,7 +176,11 @@ impl Parseable for Moonlight {
                                                                                             Some(ptk5) => {
                                                                                                 match ptk5.token {
                                                                                                     Token::RightSquareBracket => {
-                                                                                                        return vec![ptk0.clone(), ptk2.clone(), ptk4.clone()];
+                                                                                                        return InstrArg::LwSw {
+                                                                                                            accumulator: ptk0.clone(),
+                                                                                                            label_reference: ptk2.clone(),
+                                                                                                            number: ptk4.clone(),
+                                                                                                        };
                                                                                                     }
                                                                                                     _ => self.exit_with_positional_error("Expect a right square bracket after number in memory pseudo instruction format", ptk5.position),
                                                                                                 }
@@ -220,8 +224,7 @@ impl Parseable for Moonlight {
                 }
             }
         }
-
-        tokens_to_process
+        unreachable!();
     }
 
 }
