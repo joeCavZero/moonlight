@@ -9,7 +9,11 @@ pub trait Parseable {
     fn parse(&mut self, tokens: &Vec<PositionedToken>) -> Ast;
 
     fn read_comma_separated_tokens(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> Vec<PositionedToken>;
+    
+    fn read_jump_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg;
+    fn read_mul_div_swap_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg;
     fn read_lw_sw_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg;
+    fn read_call_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg;
 }
 
 impl Parseable for Moonlight {
@@ -76,13 +80,27 @@ impl Parseable for Moonlight {
                                 }
                                 Token::PseudoInstruction(ref psinstr) => {
                                     match psinstr {
-                                        PseudoInstruction::Lw | PseudoInstruction::Sw => {
-                                            let lw_sw_tokens = self.read_lw_sw_format(&tokens, ptk_index + 1);
+                                        PseudoInstruction::Jump => {
+                                            let jump_arg = self.read_jump_format(&tokens, ptk_index + 1);
                                             instr_field.push(
                                                 InstrCamp::new(
                                                     label_declarations_accumulator.clone(),
                                                     ptk.clone(),
-                                                    lw_sw_tokens,
+                                                    jump_arg,
+                                                ),
+                                            );
+
+                                            ptk_index += 2;
+                                            label_declarations_accumulator.clear();
+                                            continue;
+                                        }
+                                        PseudoInstruction::Lw | PseudoInstruction::Sw => {
+                                            let lw_sw_arg = self.read_lw_sw_format(&tokens, ptk_index + 1);
+                                            instr_field.push(
+                                                InstrCamp::new(
+                                                    label_declarations_accumulator.clone(),
+                                                    ptk.clone(),
+                                                    lw_sw_arg,
                                                 ),
                                             );
 
@@ -90,7 +108,47 @@ impl Parseable for Moonlight {
                                             label_declarations_accumulator.clear();
                                             continue;
                                         }
-                                        _ => unimplemented!("Unexpected pseudo instruction: {:?}", psinstr),
+                                        PseudoInstruction::Mul | PseudoInstruction::Div | PseudoInstruction::Swap => {
+                                            let mul_div_swap_arg = self.read_mul_div_swap_format(&tokens, ptk_index + 1);
+                                            instr_field.push(
+                                                InstrCamp::new(
+                                                    label_declarations_accumulator.clone(),
+                                                    ptk.clone(),
+                                                    mul_div_swap_arg,
+                                                ),
+                                            );
+
+                                            ptk_index += 4;
+                                            label_declarations_accumulator.clear();
+                                            continue;
+                                        }
+                                        PseudoInstruction::Call => {
+                                            let call_arg = self.read_call_format(&tokens, ptk_index + 1);
+                                            instr_field.push(
+                                                InstrCamp::new(
+                                                    label_declarations_accumulator.clone(),
+                                                    ptk.clone(),
+                                                    call_arg,
+                                                ),
+                                            );
+
+                                            ptk_index += 2;
+                                            label_declarations_accumulator.clear();
+                                            continue;
+                                        }
+                                        PseudoInstruction::Ret => {
+                                            instr_field.push(
+                                                InstrCamp::new(
+                                                    label_declarations_accumulator.clone(),
+                                                    ptk.clone(),
+                                                    InstrArg::new_ret(),
+                                                ),
+                                            );
+
+                                            ptk_index += 1;
+                                            label_declarations_accumulator.clear();
+                                            continue;
+                                        }
                                     }
                                 }
                                 _ => unimplemented!("Unexpected token in instruction field: {:?}", ptk.token),
@@ -107,7 +165,6 @@ impl Parseable for Moonlight {
             instr_field,
         }
     }
-
 
     fn read_comma_separated_tokens(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> Vec<PositionedToken> {
         let mut result = Vec::new();
@@ -134,6 +191,85 @@ impl Parseable for Moonlight {
         result
     }
 
+
+    fn read_jump_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg {
+        // example jump _label
+        match tokens.get(start_index) {
+            Some(ptk) => {
+                match ptk.token {
+                    Token::LabelReference(_) => {
+                        return InstrArg::new_jump(ptk.clone());
+                    }
+                    Token::Number(_) => {
+                        return InstrArg::new_jump(ptk.clone());
+                    }
+                    _ => self.exit_with_positional_error("Expect a label reference or number after pseudo instruction format", ptk.position),
+                }
+            }
+            None => {
+                match tokens.get(start_index - 1) {
+                    Some(bptk) => {
+                        self.exit_with_positional_error("Expect a label reference or number after pseudo instruction format", bptk.position);
+                    }
+                    None => unreachable!(),
+                }
+            }
+        }
+        unreachable!();
+    }
+
+    fn read_mul_div_swap_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg {
+        // example mul $1, $2
+        let mut tokens_to_process = Vec::new();
+        for i in 0..=2 {
+            if let Some(ptk) = tokens.get(start_index + i) {
+                tokens_to_process.push(ptk.clone());
+            } else {
+                break;
+            }
+        }
+
+        match tokens_to_process.get(0) {
+            Some(ptk0) => {
+                match ptk0.token {
+                    Token::Register(_) => {
+                        match tokens_to_process.get(1) {
+                            Some(ptk1) => {
+                                match ptk1.token {
+                                    Token::Comma => {
+                                        match tokens_to_process.get(2) {
+                                            Some(ptk2) => {
+                                                match ptk2.token {
+                                                    Token::Register(_) => {
+                                                        return InstrArg::new_mul_div_swap(ptk0.clone(), ptk2.clone());
+                                                    }
+                                                    _ => self.exit_with_positional_error("Expect a register reference after comma in this pseudo instruction format", ptk2.position),
+                                                }
+                                            }
+                                            None => self.exit_with_positional_error("Expect a register reference after comma in this pseudo instruction format", ptk1.position),
+                                        }
+                                    }
+                                    _ => self.exit_with_positional_error("Expect a comma after register in this pseudo instruction format", ptk1.position),
+                                }
+                            }
+                            None => self.exit_with_positional_error("Expect a comma after register in this pseudo instruction format", ptk0.position),
+                        }
+                    }
+                    _ => self.exit_with_positional_error("Expect a register in this pseudo instruction format", ptk0.position),
+                }
+            }
+            None => {
+                match tokens.get(start_index-1) {
+                    Some(bptk) => {
+                        self.exit_with_positional_error("Expect an accumulator after pseudo instruction format", bptk.position);
+                    }
+                    None => unreachable!(),
+                }
+            }
+        }
+        unreachable!();
+    }
+
     fn read_lw_sw_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg {
         /*
             PositionedToken { token: Accumulator(Ac0), position: Position { file: 0, line: 4, column: Some(12) } }
@@ -144,7 +280,7 @@ impl Parseable for Moonlight {
             PositionedToken { token: RightSquareBracket, position: Position { file: 0, line: 4, column: Some(21) } }     
         */
         let mut tokens_to_process = Vec::new();
-        for i in 0..6 {
+        for i in 0..=5 {
             if let Some(ptk) = tokens.get(start_index + i) {
                 tokens_to_process.push(ptk.clone());
             } else {
@@ -176,11 +312,11 @@ impl Parseable for Moonlight {
                                                                                             Some(ptk5) => {
                                                                                                 match ptk5.token {
                                                                                                     Token::RightSquareBracket => {
-                                                                                                        return InstrArg::LwSw {
-                                                                                                            accumulator: ptk0.clone(),
-                                                                                                            label_reference: ptk2.clone(),
-                                                                                                            number: ptk4.clone(),
-                                                                                                        };
+                                                                                                        return InstrArg::new_lw_sw(
+                                                                                                            ptk0.clone(),
+                                                                                                            ptk2.clone(),
+                                                                                                            ptk4.clone(),
+                                                                                                        );
                                                                                                     }
                                                                                                     _ => self.exit_with_positional_error("Expect a right square bracket after number in memory pseudo instruction format", ptk5.position),
                                                                                                 }
@@ -227,5 +363,27 @@ impl Parseable for Moonlight {
         unreachable!();
     }
 
+    fn read_call_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg {
+        // like jump, but only for label references
+        match tokens.get(start_index) {
+            Some(ptk) => {
+                match ptk.token {
+                    Token::LabelReference(_) => {
+                        return InstrArg::new_call(ptk.clone());
+                    }
+                    _ => self.exit_with_positional_error("Expect a label reference after call pseudo instruction format", ptk.position),
+                }
+            }
+            None => {
+                match tokens.get(start_index - 1) {
+                    Some(bptk) => {
+                        self.exit_with_positional_error("Expect a label reference after call pseudo instruction format", bptk.position);
+                    }
+                    None => unreachable!(),
+                }
+            }
+        }
+        unreachable!();
+    }
 }
 

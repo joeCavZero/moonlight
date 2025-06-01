@@ -52,11 +52,24 @@ pub enum InstrArg {
         rf: PositionedToken,
     },
 
+
+    // Instruction arguments for pseudo instructions
+    Jump {
+        target: PositionedToken,
+    },
+    MulDivSwap {
+        rf: PositionedToken,
+        rg: PositionedToken,
+    },
     LwSw {
-        accumulator: PositionedToken,
+        ac: PositionedToken,
         label_reference: PositionedToken,
         number: PositionedToken,
     },
+    Call {
+        target: PositionedToken,
+    },
+    Ret,
 }
 
 impl InstrArg {
@@ -96,13 +109,32 @@ impl InstrArg {
         InstrArg::E4 { rf }
     }
 
-    pub fn new_lw_sw(accumulator: PositionedToken, label_reference: PositionedToken, number: PositionedToken) -> Self {
+    // Pseudo instruction arguments
+
+    pub fn new_jump(target: PositionedToken) -> Self {
+        InstrArg::Jump { target }
+    }
+
+    pub fn new_mul_div_swap(rf: PositionedToken, rg: PositionedToken) -> Self {
+        InstrArg::MulDivSwap { rf, rg }
+    }
+
+    pub fn new_lw_sw(ac: PositionedToken, label_reference: PositionedToken, number: PositionedToken) -> Self {
         InstrArg::LwSw {
-            accumulator,
+            ac,
             label_reference,
             number,
         }
     }
+
+    pub fn new_call(target: PositionedToken) -> Self {
+        InstrArg::Call { target }
+    }
+
+    pub fn new_ret() -> Self {
+        InstrArg::Ret
+    }
+    
 }
 
 #[derive(Debug, Clone)]
