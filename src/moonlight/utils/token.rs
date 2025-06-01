@@ -39,7 +39,7 @@ impl TokenStringTrait for String {
 }
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Token {
     Number(Number),
     StringLiteral(String),

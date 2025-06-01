@@ -174,7 +174,7 @@ fn scan_string_and_generate_positioned_tokens(source: &str, file_id: u32) -> Res
                 actual_column += 1;
                 continue;
             }
-            ',' => {
+            ',' | '[' | ']' => {
                 if is_commentary || is_string_literal_mode {
                     if is_string_literal_mode {
                         token_accumulator.push(ch);
@@ -182,81 +182,6 @@ fn scan_string_and_generate_positioned_tokens(source: &str, file_id: u32) -> Res
                     actual_column += 1;
                     continue;
                 }
-                // ',' é um delimitador em instruções
-                if !token_accumulator.is_empty() {
-                    match tokens.contexted_push(
-                        token_accumulator.clone(),
-                        file_id,
-                        actual_line,
-                        if !line_has_identation { Some(initial_token_column) } else { None },
-                    ) {
-                        Ok(_) => {}
-                        Err(e) => {
-                            return Err((e, Some(Position::new(file_id, actual_line, Some(initial_token_column)))));
-                        }
-                    }
-                    token_accumulator.clear();
-                }
-                match tokens.contexted_push(
-                    ch.to_string(),
-                    file_id,
-                    actual_line,
-                    if !line_has_identation { Some(initial_token_column) } else { None },
-                ) {
-                    Ok(_) => {}
-                    Err(e) => {
-                        return Err((e, Some(Position::new(file_id, actual_line, Some(initial_token_column)))));
-                    }
-                }
-                actual_column += 1;
-                continue;
-            }
-            '[' => {
-                if is_commentary || is_string_literal_mode {
-                    if is_string_literal_mode {
-                        token_accumulator.push(ch);
-                    }
-                    actual_column += 1;
-                    continue;
-                }
-                // '[' é um delimitador de lista
-                if !token_accumulator.is_empty() {
-                    match tokens.contexted_push(
-                        token_accumulator.clone(),
-                        file_id,
-                        actual_line,
-                        if !line_has_identation { Some(initial_token_column) } else { None },
-                    ) {
-                        Ok(_) => {}
-                        Err(e) => {
-                            return Err((e, Some(Position::new(file_id, actual_line, Some(initial_token_column)))));
-                        }
-                    }
-                    token_accumulator.clear();
-                }
-                match tokens.contexted_push(
-                    ch.to_string(),
-                    file_id,
-                    actual_line,
-                    if !line_has_identation { Some(initial_token_column) } else { None },
-                ) {
-                    Ok(_) => {}
-                    Err(e) => {
-                        return Err((e, Some(Position::new(file_id, actual_line, Some(initial_token_column)))));
-                    }
-                }
-                actual_column += 1;
-                continue;
-            }
-            ']' => {
-                if is_commentary || is_string_literal_mode {
-                    if is_string_literal_mode {
-                        token_accumulator.push(ch);
-                    }
-                    actual_column += 1;
-                    continue;
-                }
-                // ']' é um delimitador de lista
                 if !token_accumulator.is_empty() {
                     match tokens.contexted_push(
                         token_accumulator.clone(),

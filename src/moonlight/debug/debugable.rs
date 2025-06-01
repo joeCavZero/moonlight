@@ -5,12 +5,12 @@ use super::debug;
 
 
 pub trait Debugable {
-    fn exit_with_positional_error(&self, error: &str, position: &Position);
+    fn exit_with_positional_error(&self, error: &str, position: Position);
     fn exit_with_error(&self, error: &str);
 }
 
 impl Debugable for Moonlight {
-    fn exit_with_positional_error(&self, error: &str, position: &Position) {
+    fn exit_with_positional_error(&self, error: &str, position: Position) {
         println!(
             "\n{} {} {} {}",
             debug::interpreter(),

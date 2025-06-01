@@ -15,7 +15,8 @@ pub trait Scannable {
 
 impl Scannable for Moonlight {
     fn scan(&mut self, file_path: &str) -> Vec<PositionedToken> {
-        return self.resolve_includes(file_path, self.file_counter);
+        let raw_tokens = self.resolve_includes(file_path, self.file_counter);
+        raw_tokens
     }
 
     fn resolve_includes(&mut self, file_path: &str, file_id: u32) -> Vec<PositionedToken> {
@@ -32,10 +33,10 @@ impl Scannable for Moonlight {
             Err((e, p)) => {
                 match p {
                     Some(position) => {
-                        self.exit_with_positional_error(&e, &position);
+                        self.exit_with_positional_error(e.as_str(), position);
                     }
                     None => {
-                        self.exit_with_error(&e);
+                        self.exit_with_error(e.as_str());
                     }
                 }
                 return Vec::new();

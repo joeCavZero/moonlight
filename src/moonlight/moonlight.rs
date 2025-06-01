@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::moonlight::parser::Parseable;
 use crate::moonlight::utils::*;
 use crate::moonlight::scanner::*;
 
@@ -25,12 +26,12 @@ impl Moonlight {
     }
 
     pub fn run(&mut self, file_path: &str) {
-        let all: Vec<PositionedToken> = self.scan(file_path);
-        for token in all {
+        let tokens: Vec<PositionedToken> = self.scan(file_path);
+        for token in &tokens {
             println!("{:?}", token);
         }
-        for (fname, fid) in &self.file_table {
-            println!("File: {} - ID: {}", fname, fid);
-        }
+        println!("========================");
+        let ast = self.parse(&tokens);
+        println!("{:#?}", ast);
     }
 }

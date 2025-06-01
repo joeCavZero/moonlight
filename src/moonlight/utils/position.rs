@@ -1,4 +1,4 @@
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Position {
     pub file: u32,
     pub line: u32,
