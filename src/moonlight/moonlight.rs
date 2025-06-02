@@ -31,6 +31,9 @@ impl Moonlight {
 
     pub fn run(&mut self, file_path: &str) {
         let tokens: Vec<PositionedToken> = self.scan(file_path);
+        for tk in &tokens {
+            println!("{:?}", tk);
+        }
         let ast = self.parse(&tokens);
         self.load_symbol_table_from(&ast);
         println!("{:?}", self.symbol_table);

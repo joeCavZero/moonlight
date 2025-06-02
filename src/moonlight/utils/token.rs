@@ -1,11 +1,17 @@
 use super::{directive::Directive, instruction::Instruction, number::Number, pseudo_instruction::PseudoInstruction};
 use crate::moonlight::utils::*;
 
-trait TokenStringable {
+pub trait Stringable {
     fn processed_string(&self) -> String;
+
+    fn from_bin_to_u16(&self) -> Result<u16, String>;
+    fn from_bin_to_i16(&self) -> Result<i16, String>;
+
+    fn from_hex_to_u16(&self) -> Result<u16, String>;
+    fn from_hex_to_i16(&self) -> Result<i16, String>;
 }
 
-impl TokenStringable for String {
+impl Stringable for String {
     fn processed_string(&self) -> String {
         let mut result = String::new();
         let mut chars = self.chars().peekable();
@@ -36,6 +42,103 @@ impl TokenStringable for String {
         
         result
     }
+
+    fn from_bin_to_u16(&self) -> Result<u16, String> {
+        let lowercased = self.clone().to_lowercase();
+        if !lowercased.starts_with("0b") || lowercased.len() < 3 || lowercased.len() > 18 {
+            return Err("Invalid binary format. Must start with '0b' and be between 3 and 18 characters long.".to_string());
+        }
+
+        let bits = &lowercased[2..];
+        let mut res: u16 = 0;
+        
+        for c in bits.chars() {
+            match c {
+                '0' => {
+                    res = res.wrapping_shl(1);
+                }
+                '1' => {
+                    res = res.wrapping_shl(1) | 1;
+                }
+                _ => {
+                    return Err("Invalid binary digit.".to_string());
+                }
+            }
+        }
+    
+        Ok(res)
+
+    }
+    
+    fn from_bin_to_i16(&self) -> Result<i16, String> {
+        let lowercased = self.clone().to_lowercase();
+        if !lowercased.starts_with("0b") || lowercased.len() < 3 || lowercased.len() > 18 {
+            return Err("Invalid binary format. Must start with '0b' and be between 3 and 18 characters long.".to_string());
+        }
+
+        let bits = &lowercased[2..];
+        let mut res: i16 = 0;
+        
+        for c in bits.chars() {
+            match c {
+                '0' => {
+                    res = res.wrapping_shl(1);
+                }
+                '1' => {
+                    res = res.wrapping_shl(1) | 1;
+                }
+                _ => {
+                    return Err("Invalid binary digit.".to_string());
+                }
+            }
+        }
+    
+        Ok(res)
+
+    }
+
+    
+    fn from_hex_to_u16(&self) -> Result<u16, String> {
+        let lowercased = self.clone().to_lowercase();
+        if !lowercased.starts_with("0x") || lowercased.len() < 3 || lowercased.len() > 6 {
+            return Err("Invalid hexadecimal format. Must start with '0x' and be between 3 and 6 characters long.".to_string());
+        }
+
+        let hex_digits = &lowercased[2..];
+        let mut res: u16 = 0;
+        for c in hex_digits.chars() {
+            res = res.wrapping_shl(4);
+            match c {
+                '0'..='9' => res |= c as u16 - '0' as u16,
+                'a'..='f' => res |= 10 + (c as u16 - 'a' as u16),
+                _ => return Err("Invalid hexadecimal digit.".to_string()),
+            }
+        }
+        Ok(res)
+
+    }
+
+    fn from_hex_to_i16(&self) -> Result<i16, String> {
+        let lowercased = self.clone().to_lowercase();
+        if !lowercased.starts_with("0x") || lowercased.len() < 3 || lowercased.len() > 6 {
+            return Err("Invalid hexadecimal format. Must start with '0x' and be between 3 and 6 characters long.".to_string());
+        }
+
+        let hex_digits = &lowercased[2..];
+        let mut res: i16 = 0;
+        for c in hex_digits.chars() {
+            res = res.wrapping_shl(4);
+            match c {
+                '0'..='9' => res |= c as i16 - '0' as i16,
+                'a'..='f' => res |= 10 + (c as i16 - 'a' as i16),
+                _ => return Err("Invalid hexadecimal digit.".to_string()),
+            }
+        }
+        Ok(res)
+
+    }
+
+
 }
 
 
