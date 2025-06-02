@@ -210,6 +210,39 @@ fn scan_string_and_generate_positioned_tokens(source: &str, file_id: u32) -> Res
                 actual_column += 1;
                 continue;
             }
+            ':' => {
+                /*
+                    This is made for recognize sticky label declarations
+                    like <_Val:.word 1, 2, 3> as separated tokens.
+                    Example:
+                        <">_Val:.word 1, 2, 3> --> ["_Val:", ".word", "1", "2", "3"]
+                 */
+                if is_commentary || is_string_literal_mode {
+                    if is_string_literal_mode {
+                        token_accumulator.push(ch);
+                    }
+                    actual_column += 1;
+                    continue;
+                }
+
+                token_accumulator.push(ch);
+
+                if !token_accumulator.is_empty() {
+                    match tokens.contexted_push(
+                        token_accumulator.clone(),
+                        file_id,
+                        actual_line,
+                        if !line_has_identation { Some(initial_token_column) } else { None },
+                    ) {
+                        Ok(_) => {}
+                        Err(e) => {
+                            return Err((e, Some(Position::new(file_id, actual_line, Some(initial_token_column)))));
+                        }
+                    }
+                    token_accumulator.clear();
+                }
+                
+            }
             _ => {
                 if is_commentary {
                     actual_column += 1;
