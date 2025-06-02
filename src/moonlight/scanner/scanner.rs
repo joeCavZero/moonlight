@@ -226,6 +226,7 @@ fn scan_string_and_generate_positioned_tokens(source: &str, file_id: u32) -> Res
                 }
 
                 token_accumulator.push(ch);
+                actual_column += 1; // this is very necessary to syncronize the column counter
 
                 if !token_accumulator.is_empty() {
                     match tokens.contexted_push(

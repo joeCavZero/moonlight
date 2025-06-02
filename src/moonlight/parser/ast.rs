@@ -1,18 +1,36 @@
 use crate::moonlight::utils::*;
 
 #[derive(Debug, Clone)]
+pub enum DataArg {
+    Number(PositionedToken),
+    Values(Vec<PositionedToken>),
+}
+
+impl DataArg {
+    pub fn new_number(number: PositionedToken) -> Self {
+        DataArg::Number(number)
+    }
+
+    pub fn new_values(values: Vec<PositionedToken>) -> Self {
+        DataArg::Values(values)
+    }
+    
+}
+
+
+#[derive(Debug, Clone)]
 pub struct DataCamp {
     pub label_declarations: Vec<PositionedToken>,
     pub directive: PositionedToken,
-    pub data: Vec<PositionedToken>,
+    pub arg: DataArg,
 }
 
 impl DataCamp {
-    pub fn new(label_declarations: Vec<PositionedToken>, directive: PositionedToken, data: Vec<PositionedToken>) -> Self {
+    pub fn new(label_declarations: Vec<PositionedToken>, directive: PositionedToken, arg: DataArg) -> Self {
         DataCamp {
             label_declarations,
             directive,
-            data,
+            arg,
         }
     }
 }

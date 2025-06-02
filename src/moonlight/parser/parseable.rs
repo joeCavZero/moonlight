@@ -37,7 +37,7 @@ impl Parseable for Moonlight {
                 Some(ptk) => ptk,
                 None => break,
             };
-            println!("======= Processing token: {:?} =======", ptk);
+            
             match ptk.token {
                 Token::Directive(Directive::Data) => {
                     current_field = Field::Data;
@@ -60,24 +60,46 @@ impl Parseable for Moonlight {
                                 }
                                 Token::Directive(Directive::Word) | Token::Directive(Directive::Byte) => {
                                     let data = self.read_comma_separated_tokens(tokens, ptk_index + 1);
-                                    for d in &data {
-                                        println!("----> data token: {:?}", d);
-                                    }
+                                    
                                     let data_len = data.len();
                                     data_field.push(
                                         DataCamp::new(
                                             label_declarations_accumulator.clone(),
                                             ptk.clone(),
-                                            data
+                                            DataArg::new_values(data),
                                         )
                                     );
                                     ptk_index += data_len * 2 ;
                                     label_declarations_accumulator.clear();
                                     continue;
                                 }
-                                _ => self.exit_with_positional_error("Unexpected token in data field", ptk.position),
+                                Token::Directive(Directive::Space) => {
+                                    match tokens.get(ptk_index + 1) {
+                                        Some(next_ptk) => {
+                                            match next_ptk.token {
+                                                Token::Number(_) => {
+
+                                                    data_field.push(
+                                                        DataCamp::new(
+                                                            label_declarations_accumulator.clone(),
+                                                            ptk.clone(),
+                                                            DataArg::new_number(next_ptk.clone()),
+                                                        )
+                                                    );
+                                                    ptk_index += 2;
+                                                    label_declarations_accumulator.clear();
+                                                    continue;
+                                                }
+                                                _ => self.exit_with_positional_error("Expect a number after space directive", next_ptk.position),
+                                            }
+                                        }
+                                        None => self.exit_with_positional_error("Expect a number after space directive", ptk.position),
+                                    }
+                                }
+                                _ => self.exit_with_positional_error("Expected a label declaration or directive in data field", ptk.position),
                                     
                             }
+                            
                         }
                         Field::Inst => {
                             match ptk.token {
@@ -346,7 +368,8 @@ impl Parseable for Moonlight {
         while let Some(ptk) = tokens.get(current_index) {
             match ptk.token {
                 Token::Comma => return result,
-                _ => result.push(ptk.clone()),
+                Token::Number(_) => result.push(ptk.clone()),
+                _ => self.exit_with_positional_error("Expect a comma separated number ", ptk.position),
             }
 
             match tokens.get(current_index + 1) {
