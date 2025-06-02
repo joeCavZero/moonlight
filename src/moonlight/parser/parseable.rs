@@ -14,6 +14,14 @@ pub trait Parseable {
     fn read_mul_div_swap_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg;
     fn read_lw_sw_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg;
     fn read_call_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg;
+
+    fn read_ac_r_r_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg;
+    fn read_ac_r_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg;
+    fn read_r_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg;
+    fn read_ac_r_number_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg;
+    fn read_ac_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg;
+    fn read_ac_number_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg;
+    fn read_number_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg;
 }
 
 impl Parseable for Moonlight {
@@ -141,7 +149,7 @@ impl Parseable for Moonlight {
                                                 InstrCamp::new(
                                                     label_declarations_accumulator.clone(),
                                                     ptk.clone(),
-                                                    InstrArg::new_ret(),
+                                                    InstrArg::new_empty(),
                                                 ),
                                             );
 
@@ -151,7 +159,172 @@ impl Parseable for Moonlight {
                                         }
                                     }
                                 }
-                                _ => unimplemented!("Unexpected token in instruction field: {:?}", ptk.token),
+                                Token::Instruction(ref instr) => {
+                                    match instr {
+                                        Instruction::Nope => {
+                                            instr_field.push(
+                                                InstrCamp::new(
+                                                    label_declarations_accumulator.clone(),
+                                                    ptk.clone(),
+                                                    InstrArg::new_empty(),
+                                                ),
+                                            );
+                                            ptk_index += 1;
+                                            label_declarations_accumulator.clear();
+                                            continue;
+                                        }
+                                        Instruction::Add
+                                        | Instruction::Sub
+                                        | Instruction::And
+                                        | Instruction::Or
+                                        | Instruction::Xor
+                                        | Instruction::Nand
+                                        | Instruction::Nor
+                                        | Instruction::Xnor
+                                        | Instruction::Slt 
+                                        | Instruction::Lwr
+                                        | Instruction::Swr
+                                        => {
+                                            // AC_R_R
+                                            let ac_r_r_arg = self.read_ac_r_r_format(&tokens, ptk_index + 1);
+                                            instr_field.push(
+                                                InstrCamp::new(
+                                                    label_declarations_accumulator.clone(),
+                                                    ptk.clone(),
+                                                    ac_r_r_arg,
+                                                ),
+                                            );
+                                            ptk_index += 6;
+                                            label_declarations_accumulator.clear();
+                                            continue;
+                                        }
+                                        Instruction::Not
+                                        | Instruction::Mtac
+                                        | Instruction::Mfac
+
+                                        | Instruction::Bgtzr
+                                        | Instruction::Bltzr
+                                        | Instruction::Beqzr
+                                        | Instruction::Bnezr
+                                        => {
+                                            // AC_R
+                                            let ac_r_arg = self.read_ac_r_format(&tokens, ptk_index + 1);
+                                            instr_field.push(
+                                                InstrCamp::new(
+                                                    label_declarations_accumulator.clone(),
+                                                    ptk.clone(),
+                                                    ac_r_arg,
+                                                ),
+                                            );
+                                            ptk_index += 4;
+                                            label_declarations_accumulator.clear();
+                                            continue;
+                                        }
+                                        Instruction::Tmul
+                                        | Instruction::Tdiv
+                                        | Instruction::Ja
+                                        | Instruction::Jal
+                                        => {
+                                            // R
+                                            let r_arg = self.read_r_format(&tokens, ptk_index + 1);
+                                            instr_field.push(
+                                                InstrCamp::new(
+                                                    label_declarations_accumulator.clone(),
+                                                    ptk.clone(),
+                                                    r_arg,
+                                                ),
+                                            );
+                                            ptk_index += 2;
+                                            label_declarations_accumulator.clear();
+                                            continue;
+                                        }
+                                        Instruction::Sll
+                                        | Instruction::Srl
+                                        | Instruction::Sra
+                                        => {
+                                            // AC_R_NUMBER
+                                            let ac_r_number_arg = self.read_ac_r_number_format(&tokens, ptk_index + 1);
+                                            instr_field.push(
+                                                InstrCamp::new(
+                                                    label_declarations_accumulator.clone(),
+                                                    ptk.clone(),
+                                                    ac_r_number_arg,
+                                                ),
+                                            );
+                                            ptk_index += 6;
+                                            label_declarations_accumulator.clear();
+                                            continue;
+                                        }
+                                        Instruction::Mtl
+                                        | Instruction::Mfl
+                                        | Instruction::Mth
+                                        | Instruction::Mfh
+                                        | Instruction::Push
+                                        | Instruction::Pop
+                                        => {
+                                            // AC
+                                            let ac_arg = self.read_ac_format(&tokens, ptk_index + 1);
+                                            instr_field.push(
+                                                InstrCamp::new(
+                                                    label_declarations_accumulator.clone(),
+                                                    ptk.clone(),
+                                                    ac_arg,
+                                                ),
+                                            );
+                                            ptk_index += 2;
+                                            label_declarations_accumulator.clear();
+                                            continue;
+                                        }
+                                        Instruction::Addi  
+                                        | Instruction::Subi
+                                        | Instruction::Andi
+                                        | Instruction::Ori
+                                        | Instruction::Xori
+                                        | Instruction::Nandi
+                                        | Instruction::Nori
+                                        | Instruction::Xnori
+                                        | Instruction::Lli
+                                        | Instruction::Lui
+                                        | Instruction::Lsi
+
+                                        | Instruction::Bgtz
+                                        | Instruction::Bltz
+                                        | Instruction::Beqz
+                                        | Instruction::Bnez
+                                        => {
+                                            // AC_NUMBER
+                                            let ac_number_arg = self.read_ac_number_format(&tokens, ptk_index + 1);
+                                            instr_field.push(
+                                                InstrCamp::new(
+                                                    label_declarations_accumulator.clone(),
+                                                    ptk.clone(),
+                                                    ac_number_arg,
+                                                ),
+                                            );
+                                            ptk_index += 4;
+                                            label_declarations_accumulator.clear();
+                                            continue;
+                                        }
+                                        Instruction::Jr
+                                        | Instruction::Jrl
+                                        => {
+                                            // NUMBER
+                                            let number_arg = self.read_number_format(&tokens, ptk_index + 1);
+                                            instr_field.push(
+                                                InstrCamp::new(
+                                                    label_declarations_accumulator.clone(),
+                                                    ptk.clone(),
+                                                    number_arg,
+                                                ),
+                                            );
+                                            ptk_index += 2;
+                                            label_declarations_accumulator.clear();
+                                            continue;
+                                        }
+                                        
+                                    }
+                                }
+                                _ => self.exit_with_positional_error("Expected a label declaration, instruction or pseudo instruction", ptk.position),
                             }
                         }
                     }
@@ -193,7 +366,7 @@ impl Parseable for Moonlight {
 
 
     fn read_jump_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg {
-        // example jump _label
+        // example jump _label|Number
         match tokens.get(start_index) {
             Some(ptk) => {
                 match ptk.token {
@@ -385,5 +558,325 @@ impl Parseable for Moonlight {
         }
         unreachable!();
     }
+
+
+    fn read_ac_r_r_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg {
+        // example add &0, $1, $2
+        let mut tokens_to_process = Vec::new();
+        for i in 0..=4 {
+            if let Some(ptk) = tokens.get(start_index + i) {
+                tokens_to_process.push(ptk.clone());
+            } else {
+                break;
+            }
+        }
+
+        match tokens_to_process.get(0) {
+            Some(ptk0) => {
+                match ptk0.token {
+                    Token::Accumulator(_) => {
+                        match tokens_to_process.get(1) {
+                            Some(ptk1) => {
+                                match ptk1.token {
+                                    Token::Comma => {
+                                        match tokens_to_process.get(2) {
+                                            Some(ptk2) => {
+                                                match ptk2.token {
+                                                    Token::Register(_) => {
+                                                        match tokens_to_process.get(3) {
+                                                            Some(ptk3) => {
+                                                                match ptk3.token {
+                                                                    Token::Comma => {
+                                                                        match tokens_to_process.get(4) {
+                                                                            Some(ptk4) => {
+                                                                                match ptk4.token {
+                                                                                    Token::Register(_) => {
+                                                                                        return InstrArg::new_ac_r_r(ptk0.clone(), ptk2.clone(), ptk4.clone());
+                                                                                    }
+                                                                                    _ => self.exit_with_positional_error("Expect a register after comma in this instruction format", ptk4.position),
+                                                                                }
+                                                                            }
+                                                                            None => self.exit_with_positional_error("Expect a register after comma in this instruction format", ptk3.position),
+                                                                        }
+                                                                    }
+                                                                    _ => self.exit_with_positional_error("Expect a comma after register in this instruction format", ptk3.position),
+                                                                }
+                                                            }
+                                                            None => self.exit_with_positional_error("Expect a comma after register in this instruction format", ptk2.position),
+                                                        }
+                                                    }
+                                                    _ => self.exit_with_positional_error("Expect a register after comma in this instruction format", ptk2.position),
+                                                }
+                                            }
+                                            None => self.exit_with_positional_error("Expect a register after comma in this instruction format", ptk1.position),
+                                        }
+                                    }
+                                    _ => self.exit_with_positional_error("Expect a comma after accumulator in this instruction format", ptk1.position),
+                                }
+                            }
+                            None => self.exit_with_positional_error("Expect a comma after accumulator in this instruction format", ptk0.position),
+                        }
+                    }
+                    _ => self.exit_with_positional_error("Expect an accumulator in this instruction format", ptk0.position),
+                }
+            }
+            None => {
+                match tokens.get(start_index-1) {
+                    Some(bptk) => {
+                        self.exit_with_positional_error("Expect an accumulator in this instruction format", bptk.position);
+                    }
+                    None => unreachable!(),
+                }
+            }
+        }
+        unreachable!();
+    }
+
+    fn read_ac_r_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg {
+        // example not &0, $1
+        let mut tokens_to_process = Vec::new();
+        for i in 0..=2 {
+            if let Some(ptk) = tokens.get(start_index + i) {
+                tokens_to_process.push(ptk.clone());
+            } else {
+                break;
+            }
+        }
+
+        match tokens_to_process.get(0) {
+            Some(ptk0) => {
+                match ptk0.token {
+                    Token::Accumulator(_) => {
+                        match tokens_to_process.get(1) {
+                            Some(ptk1) => {
+                                match ptk1.token {
+                                    Token::Comma => {
+                                        match tokens_to_process.get(2) {
+                                            Some(ptk2) => {
+                                                match ptk2.token {
+                                                    Token::Register(_) => {
+                                                        return InstrArg::new_ac_r(ptk0.clone(), ptk2.clone());
+                                                    }
+                                                    _ => self.exit_with_positional_error("Expect a register after comma in this instruction format", ptk2.position),
+                                                }
+                                            }
+                                            None => self.exit_with_positional_error("Expect a register after comma in this instruction format", ptk1.position),
+                                        }
+                                    }
+                                    _ => self.exit_with_positional_error("Expect a comma after accumulator in this instruction format", ptk1.position),
+                                }
+                            }
+                            None => self.exit_with_positional_error("Expect a comma after accumulator in this instruction format", ptk0.position),
+                        }
+                    }
+                    _ => self.exit_with_positional_error("Expect an accumulator in this instruction format", ptk0.position),
+                }
+            }
+            None => {
+                match tokens.get(start_index-1) {
+                    Some(bptk) => {
+                        self.exit_with_positional_error("Expect an accumulator in this instruction format", bptk.position);
+                    }
+                    None => unreachable!(),
+                }
+            }
+        }
+        unreachable!();
+    }
+
+    fn read_r_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg {
+        // example inst $1
+        match tokens.get(start_index) {
+            Some(ptk) => {
+                match ptk.token {
+                    Token::Register(_) => {
+                        return InstrArg::new_r(ptk.clone());
+                    }
+                    _ => self.exit_with_positional_error("Expect a register in this instruction format", ptk.position),
+                }
+            }
+            None => {
+                match tokens.get(start_index - 1) {
+                    Some(bptk) => {
+                        self.exit_with_positional_error("Expect a register in this instruction format", bptk.position);
+                    }
+                    None => unreachable!(),
+                }
+            }
+        };
+        unreachable!();
+    }
+
+    fn read_ac_r_number_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg {
+        // example sll &0, $1, 5
+        let mut tokens_to_process = Vec::new();
+        for i in 0..=4 {
+            if let Some(ptk) = tokens.get(start_index + i) {
+                tokens_to_process.push(ptk.clone());
+            } else {
+                break;
+            }
+        }
+
+        match tokens_to_process.get(0) {
+            Some(ptk0) => {
+                match ptk0.token {
+                    Token::Accumulator(_) => {
+                        match tokens_to_process.get(1) {
+                            Some(ptk1) => {
+                                match ptk1.token {
+                                    Token::Comma => {
+                                        match tokens_to_process.get(2) {
+                                            Some(ptk2) => {
+                                                match ptk2.token {
+                                                    Token::Register(_) => {
+                                                        match tokens_to_process.get(3) {
+                                                            Some(ptk3) => {
+                                                                match ptk3.token {
+                                                                    Token::Comma => {
+                                                                        match tokens_to_process.get(4) {
+                                                                            Some(ptk4) => {
+                                                                                match ptk4.token {
+                                                                                    Token::Number(_) => {
+                                                                                        return InstrArg::new_ac_r_number(ptk0.clone(), ptk2.clone(), ptk4.clone());
+                                                                                    }
+                                                                                    _ => self.exit_with_positional_error("Expect a number after comma in this instruction format", ptk4.position),
+                                                                                }
+                                                                            }
+                                                                            None => self.exit_with_positional_error("Expect a number after comma in this instruction format", ptk3.position),
+                                                                        }
+                                                                    }
+                                                                    _ => self.exit_with_positional_error("Expect a comma after register in this instruction format", ptk3.position),
+                                                                }
+                                                            }
+                                                            None => self.exit_with_positional_error("Expect a comma after register in this instruction format", ptk2.position),
+                                                        }
+                                                    }
+                                                    _ => self.exit_with_positional_error("Expect a register after comma in this instruction format", ptk2.position),
+                                                }
+                                            }
+                                            None => self.exit_with_positional_error("Expect a register after comma in this instruction format", ptk1.position),
+                                        }
+                                    }
+                                    _ => self.exit_with_positional_error("Expect a comma after accumulator in this instruction format", ptk1.position),
+                                }
+                            }
+                            None => self.exit_with_positional_error("Expect a comma after accumulator in this instruction format", ptk0.position),
+                        }
+                    }
+                    _ => self.exit_with_positional_error("Expect an accumulator in this instruction format", ptk0.position),
+                }
+            }
+            None => {
+                match tokens.get(start_index-1) {
+                    Some(bptk) => {
+                        self.exit_with_positional_error("Expect an accumulator in this instruction format", bptk.position);
+                    }
+                    None => unreachable!(),
+                }
+            }
+        };
+        unreachable!();
+    }
+
+
+    fn read_ac_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg {
+        // example mtac &0
+        match tokens.get(start_index) {
+            Some(ptk) => {
+                match ptk.token {
+                    Token::Accumulator(_) => {
+                        return InstrArg::new_ac(ptk.clone());
+                    }
+                    _ => self.exit_with_positional_error("Expect an accumulator in this instruction format", ptk.position),
+                }
+            }
+            None => {
+                match tokens.get(start_index - 1) {
+                    Some(bptk) => {
+                        self.exit_with_positional_error("Expect an accumulator in this instruction format", bptk.position);
+                    }
+                    None => unreachable!(),
+                }
+            }
+        };
+        unreachable!();
+    }
+
+    fn read_ac_number_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg {
+        // example addi &0, 5
+        let mut tokens_to_process = Vec::new();
+        for i in 0..=2 {
+            if let Some(ptk) = tokens.get(start_index + i) {
+                tokens_to_process.push(ptk.clone());
+            } else {
+                break;
+            }
+        }
+
+        match tokens_to_process.get(0) {
+            Some(ptk0) => {
+                match ptk0.token {
+                    Token::Accumulator(_) => {
+                        match tokens_to_process.get(1) {
+                            Some(ptk1) => {
+                                match ptk1.token {
+                                    Token::Comma => {
+                                        match tokens_to_process.get(2) {
+                                            Some(ptk2) => {
+                                                match ptk2.token {
+                                                    Token::Number(_) => {
+                                                        return InstrArg::new_ac_number(ptk0.clone(), ptk2.clone());
+                                                    }
+                                                    _ => self.exit_with_positional_error("Expect a number after comma in this instruction format", ptk2.position),
+                                                }
+                                            }
+                                            None => self.exit_with_positional_error("Expect a number after comma in this instruction format", ptk1.position),
+                                        }
+                                    }
+                                    _ => self.exit_with_positional_error("Expect a comma after accumulator in this instruction format", ptk1.position),
+                                }
+                            }
+                            None => self.exit_with_positional_error("Expect a comma after accumulator in this instruction format", ptk0.position),
+                        }
+                    }
+                    _ => self.exit_with_positional_error("Expect an accumulator in this instruction format", ptk0.position),
+                }
+            }
+            None => {
+                match tokens.get(start_index-1) {
+                    Some(bptk) => {
+                        self.exit_with_positional_error("Expect an accumulator in this instruction format", bptk.position);
+                    }
+                    None => unreachable!(),
+                }
+            }
+        };
+        unreachable!();
+    }
+
+    fn read_number_format(&self, tokens: &Vec<PositionedToken>, start_index: usize) -> InstrArg {
+        // example lli 5
+        match tokens.get(start_index) {
+            Some(ptk) => {
+                match ptk.token {
+                    Token::Number(_) => {
+                        return InstrArg::new_number(ptk.clone());
+                    }
+                    _ => self.exit_with_positional_error("Expect a number in this instruction format", ptk.position),
+                }
+            }
+            None => {
+                match tokens.get(start_index - 1) {
+                    Some(bptk) => {
+                        self.exit_with_positional_error("Expect a number in this instruction format", bptk.position);
+                    }
+                    None => unreachable!(),
+                }
+            }
+        };
+        unreachable!();
+    }
+
 }
 

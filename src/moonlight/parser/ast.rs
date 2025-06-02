@@ -19,39 +19,34 @@ impl DataCamp {
 
 #[derive(Debug, Clone)]
 pub enum InstrArg {
-    N,
+    Empty,
+    AcRR {
+        ac: PositionedToken,
+        r1: PositionedToken,
+        r2: PositionedToken,
+    },
+    AcR {
+        ac: PositionedToken,
+        r: PositionedToken,
+    },
     R {
-        ac: PositionedToken,
-        rf: PositionedToken,
-        rg: PositionedToken,
+        r: PositionedToken,
     },
-    I {
+    AcRNumber {
+        ac: PositionedToken,
+        r: PositionedToken,
+        number: PositionedToken,
+    },
+    Ac {
+        ac: PositionedToken,
+    },
+    AcNumber {
         ac: PositionedToken,
         number: PositionedToken,
     },
-    S {
-        ac: PositionedToken,
-        rf: PositionedToken,
+    Number {
         number: PositionedToken,
     },
-    J {
-        number: PositionedToken,
-    },
-
-    E1 {
-        ac: PositionedToken,
-        rf: PositionedToken,
-    },
-    E2 {
-        rf: PositionedToken,
-    },
-    E3 {
-        ac: PositionedToken,
-    },
-    E4 {
-        rf: PositionedToken,
-    },
-
 
     // Instruction arguments for pseudo instructions
     Jump {
@@ -68,48 +63,41 @@ pub enum InstrArg {
     },
     Call {
         target: PositionedToken,
-    },
-    Ret,
+    }
 }
 
 impl InstrArg {
-    pub fn new_n() -> Self {
-        InstrArg::N
+    pub fn new_empty() -> Self {
+        InstrArg::Empty
     }
 
-    pub fn new_r(ac: PositionedToken, rf: PositionedToken, rg: PositionedToken) -> Self {
-        InstrArg::R { ac, rf, rg }
+    pub fn new_ac_r_r(ac: PositionedToken, r1: PositionedToken, r2: PositionedToken) -> Self {
+        InstrArg::AcRR { ac, r1, r2 }
     }
 
-    pub fn new_i(ac: PositionedToken, number: PositionedToken) -> Self {
-        InstrArg::I { ac, number }
+    pub fn new_ac_r(ac: PositionedToken, r: PositionedToken) -> Self {
+        InstrArg::AcR { ac, r }
     }
 
-    pub fn new_s(ac: PositionedToken, rf: PositionedToken, number: PositionedToken) -> Self {
-        InstrArg::S { ac, rf, number }
+    pub fn new_r(r: PositionedToken) -> Self {
+        InstrArg::R { r }
     }
 
-    pub fn new_j(number: PositionedToken) -> Self {
-        InstrArg::J { number }
+    pub fn new_ac_r_number(ac: PositionedToken, r: PositionedToken, number: PositionedToken) -> Self {
+        InstrArg::AcRNumber { ac, r, number }
     }
 
-    pub fn new_e1(ac: PositionedToken, rf: PositionedToken) -> Self {
-        InstrArg::E1 { ac, rf }
+    pub fn new_ac(ac: PositionedToken) -> Self {
+        InstrArg::Ac { ac }
     }
 
-    pub fn new_e2(rf: PositionedToken) -> Self {
-        InstrArg::E2 { rf }
+    pub fn new_ac_number(ac: PositionedToken, number: PositionedToken) -> Self {
+        InstrArg::AcNumber { ac, number }
     }
 
-    pub fn new_e3(ac: PositionedToken) -> Self {
-        InstrArg::E3 { ac }
+    pub fn new_number(number: PositionedToken) -> Self {
+        InstrArg::Number { number }
     }
-
-    pub fn new_e4(rf: PositionedToken) -> Self {
-        InstrArg::E4 { rf }
-    }
-
-    // Pseudo instruction arguments
 
     pub fn new_jump(target: PositionedToken) -> Self {
         InstrArg::Jump { target }
@@ -129,10 +117,6 @@ impl InstrArg {
 
     pub fn new_call(target: PositionedToken) -> Self {
         InstrArg::Call { target }
-    }
-
-    pub fn new_ret() -> Self {
-        InstrArg::Ret
     }
     
 }

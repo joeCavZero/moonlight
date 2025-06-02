@@ -1,7 +1,7 @@
 use colored::Colorize;
 use supports_color::Stream;
 
-const INTERPRETER_NAME: &str = "Moonlight";
+const INTERPRETER_NAME: &str = "MOONLIGHT";
 
 pub fn interpreter() -> String {
     let text = format!("[{}]", INTERPRETER_NAME);
