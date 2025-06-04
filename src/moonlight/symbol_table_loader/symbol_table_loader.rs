@@ -22,9 +22,10 @@ impl SymbolTableLoader for Moonlight {
             }
 
             match data_camp.directive.token {
-                /*
-                    CASE BE BYTE OR WORD
-                 */
+                ///////////////////////////
+                // CASE BE BYTE OR WORD
+                ///////////////////////////
+                
                 Token::Directive(Directive::Byte) 
                 | Token::Directive(Directive::Word) 
                 => {
@@ -53,16 +54,16 @@ impl SymbolTableLoader for Moonlight {
                     
                 }
 
-                /*
-                    CASE BE SPACE
-                 */
+                //////////////////////
+                // CASE BE SPACE
+                //////////////////////
                 Token::Directive(Directive::Space) => {
                     match data_camp.arg {
                         DataArg::Number(ref ptk) => {
                             match ptk.token {
                                 Token::Number(ref number_token) => {
                                     match number_token.to_u16() {
-                                        Some(num) => {
+                                        Ok(num) => {
                                             match stack_counter.checked_add(num) {
                                                 Some(v) => {
                                                     stack_counter = v;
@@ -72,9 +73,7 @@ impl SymbolTableLoader for Moonlight {
                                                 }
                                             }
                                         }
-                                        None => {
-                                            self.exit_with_positional_error("Invalid number for .space directive, must be a valid u16.", ptk.position);
-                                        }
+                                        Err(e) => self.exit_with_positional_error(e.as_str(), ptk.position),
                                     }
                                 }
                                 _ => unreachable!(),

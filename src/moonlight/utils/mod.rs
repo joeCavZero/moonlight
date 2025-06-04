@@ -6,6 +6,7 @@ pub mod directive;
 pub mod number;
 pub mod accumulator;
 pub mod register;
+pub mod stringable;
 
 pub use token::*;
 pub use position::*;
@@ -15,3 +16,4 @@ pub use directive::*;
 pub use number::*;
 pub use accumulator::*;
 pub use register::*;
+pub use stringable::*;

@@ -10,26 +10,28 @@ pub enum Number {
 
 impl Number {
     
-    pub fn to_u16(&self) -> Option<u16> {
+    pub fn to_u16(&self) -> Result<u16, String> {
         match self {
             Number::Integer(v) => {
                 match u16::try_from(*v) {
-                    Ok(val) => Some(val),
-                    Err(_) => None,
+                    Ok(val) => Ok(val),
+                    Err(_) => Err("Value out of range for unsigned 16-bit integer.".to_string()),
                 }
             }
             Number::Binary(bits) => {
                 match bits.from_bin_to_u16() {
-                    Ok(val) => Some(val),
-                    Err(_) => None,
+                    Ok(val) => Ok(val),
+                    Err(e) => Err(e),
                 }
             }
             Number::Hexadecimal(hex) => {
                 match hex.from_hex_to_u16() {
-                    Ok(val) => Some(val),
-                    Err(_) => None,
+                    Ok(val) => Ok(val),
+                    Err(e) => Err(e),
                 }
             }
         }
     }
+
+
 }
