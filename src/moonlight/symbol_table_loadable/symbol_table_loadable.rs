@@ -1,20 +1,30 @@
-use crate::moonlight::{debug::Debugable, parser::ast::{Ast, DataArg}, utils::{Directive, Token}, Moonlight};
+use crate::moonlight::debugable::*;
+use crate::moonlight::parseable::*;
+use crate::moonlight::utils::*;
+use crate::moonlight::Moonlight;
 
-pub trait SymbolTableLoader {
+pub trait SymbolTableLoadable {
     fn load_symbol_table_from(&mut self, ast: &Ast);
 }
 
-impl SymbolTableLoader for Moonlight {
+impl SymbolTableLoadable for Moonlight {
     fn load_symbol_table_from(&mut self, ast: &Ast) {
-        let mut stack_counter: u16 = 0;
+        let mut stack_counter: usize = 0;
         for data_camp in ast.data_field.iter() {
             for label in data_camp.label_declarations.iter() {
                 match label.token {
                     Token::LabelDeclaration(ref label_string) => {
-                        self.symbol_table.insert(
-                            label_string.clone(),
-                            stack_counter,
-                        );
+                        match u16::try_from(stack_counter) {
+                            Ok(stack_counter_u16) => {
+                                self.symbol_table.insert(
+                                    label_string.clone(),
+                                    stack_counter_u16,
+                                );
+                            }
+                            Err(_) => {
+                                self.exit_with_error("Stack overflow while loading symbol table.");
+                            }
+                        }
                     }
                     _ => unreachable!(),
                 }
@@ -64,7 +74,7 @@ impl SymbolTableLoader for Moonlight {
                                 Token::Number(ref number_token) => {
                                     match number_token.to_u16() {
                                         Ok(num) => {
-                                            match stack_counter.checked_add(num) {
+                                            match stack_counter.checked_add(num as usize) {
                                                 Some(v) => {
                                                     stack_counter = v;
                                                 }

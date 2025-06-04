@@ -1,8 +1,9 @@
 pub mod moonlight;
 pub mod utils;
-pub mod debug;
-pub mod scanner;
-pub mod parser;
-pub mod symbol_table_loader;
+pub mod debugable;
+pub mod scanneable;
+pub mod parseable;
+pub mod symbol_table_loadable;
+pub mod data_memory_loadable;
 
 pub use moonlight::Moonlight;

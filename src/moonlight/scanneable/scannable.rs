@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-use crate::moonlight::debug::*;
+use crate::moonlight::debugable::*;
 use crate::moonlight::utils::*;
 use crate::moonlight::*;
 
