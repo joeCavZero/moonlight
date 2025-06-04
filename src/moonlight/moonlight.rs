@@ -9,11 +9,7 @@ pub const DATA_MEMORY_SIZE: usize = 32768;
 
 pub struct Moonlight {
     pub file_table: HashMap<u32, String>,
-    pub file_counter: u32,
-    pub file_dependencies: HashMap<u32, Vec<u32>>,
-
     pub symbol_table: HashMap<String, u16>,
-
     pub data_memory: [u8; DATA_MEMORY_SIZE],
 }
 
@@ -21,8 +17,6 @@ impl Moonlight {
     pub fn new() -> Self {
         Moonlight {
             file_table: HashMap::new(),
-            file_counter: 0,
-            file_dependencies: HashMap::new(),
             symbol_table: HashMap::new(),
 
             data_memory: [7; DATA_MEMORY_SIZE],

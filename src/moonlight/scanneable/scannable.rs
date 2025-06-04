@@ -9,17 +9,20 @@ use super::scanner::*;
 
 pub trait Scannable {
     fn scan(&mut self, file_path: &str) -> Vec<PositionedToken>;
-    fn resolve_includes(&mut self, file_path: &str, file_id: u32) -> Vec<PositionedToken>;
-    fn has_dependency_cycle(&self, start: u32, target: u32) -> bool;
+    fn resolve_includes(&mut self, file_path: &str, file_id: u32, file_counter: &mut u32, file_dependencies: &mut HashMap<u32, Vec<u32>>) -> Vec<PositionedToken>;
+    fn has_dependency_cycle(&self, file_dependencies: &HashMap<u32, Vec<u32>>, start: u32, target: u32) -> bool;
 }
 
 impl Scannable for Moonlight {
     fn scan(&mut self, file_path: &str) -> Vec<PositionedToken> {
-        let raw_tokens = self.resolve_includes(file_path, self.file_counter);
+        let mut file_counter: u32 = 0;
+        let mut file_dependencies: HashMap<u32, Vec<u32>> = HashMap::new();
+
+        let raw_tokens = self.resolve_includes(file_path, file_counter, &mut file_counter, &mut file_dependencies);
         raw_tokens
     }
 
-    fn resolve_includes(&mut self, file_path: &str, file_id: u32) -> Vec<PositionedToken> {
+    fn resolve_includes(&mut self, file_path: &str, file_id: u32, file_counter: &mut u32, file_dependencies: &mut HashMap<u32, Vec<u32>>) -> Vec<PositionedToken> {
         /*
            Aqui vamos fazer um scan do arquivo file_path,
            verificar se existe alguma diretiva de include,
@@ -32,12 +35,8 @@ impl Scannable for Moonlight {
             Ok(tokens) => tokens,
             Err((e, p)) => {
                 match p {
-                    Some(position) => {
-                        self.exit_with_positional_error(e.as_str(), position);
-                    }
-                    None => {
-                        self.exit_with_error(e.as_str());
-                    }
+                    Some(position) => self.exit_with_positional_error(e.as_str(), position),
+                    None => self.exit_with_error(e.as_str()),
                 }
                 return Vec::new();
             }
@@ -61,8 +60,8 @@ impl Scannable for Moonlight {
                                 {
                                     id
                                 } else {
-                                    self.file_counter += 1;
-                                    self.file_counter
+                                    *file_counter += 1;
+                                    *file_counter
                                 };
 
                                 /*
@@ -70,7 +69,7 @@ impl Scannable for Moonlight {
                                     If the current file_id is already in the dependency chain
                                     of the included_file_id, it means we have a cycle.
                                  */
-                                if self.has_dependency_cycle(file_id, included_file_id) {
+                                if self.has_dependency_cycle(file_dependencies, file_id, included_file_id) {
                                     let included_name = self.get_file_name(included_file_id);
                                     let current_name = self.get_file_name(file_id);
 
@@ -87,14 +86,14 @@ impl Scannable for Moonlight {
                                 }
 
                                 // Atualizar file_dependencies
-                                self.file_dependencies
+                                file_dependencies
                                     .entry(file_id)
                                     .or_insert_with(Vec::new)
                                     .push(included_file_id);
 
                                 // Recursivamente processar includes
                                 let included_tokens =
-                                    self.resolve_includes(&path, included_file_id);
+                                    self.resolve_includes(&path, included_file_id, file_counter, file_dependencies);
 
                                 // Remover a diretiva de include e o path dos tokens
                                 tokens.remove(token_counter);
@@ -107,6 +106,12 @@ impl Scannable for Moonlight {
                                     token_quantity += 1;
                                 }
                                 continue;
+                            } else {
+                                self.exit_with_positional_error(
+                                    "Expected a string literal after .include directive.",
+                                    next_token.position,
+                                );
+                                return Vec::new();
                             }
                         }
                     }
@@ -119,7 +124,7 @@ impl Scannable for Moonlight {
         return tokens;
     }
 
-    fn has_dependency_cycle(&self, start: u32, target: u32) -> bool {
+    fn has_dependency_cycle(&self, file_dependencies: &HashMap<u32, Vec<u32>>, start: u32, target: u32) -> bool {
         fn visit(
             deps: &HashMap<u32, Vec<u32>>,
             current: u32,
@@ -142,6 +147,6 @@ impl Scannable for Moonlight {
             false
         }
         let mut visited = std::collections::HashSet::new();
-        visit(&self.file_dependencies, target, start, &mut visited)
+        visit(file_dependencies, target, start, &mut visited)
     }
 }

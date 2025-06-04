@@ -346,6 +346,7 @@ impl Parseable for Moonlight {
                                         
                                     }
                                 }
+                                Token::Directive(Directive::Include) => unreachable!(),
                                 _ => self.exit_with_positional_error("Expected a label declaration, instruction or pseudo instruction", ptk.position),
                             }
                         }

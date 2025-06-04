@@ -100,8 +100,6 @@ impl DataMemoryLoadable for Moonlight {
                 
                 _ => unreachable!(),
             }
-
-            println!("------> {}", stack_counter);
             
         }
     }
