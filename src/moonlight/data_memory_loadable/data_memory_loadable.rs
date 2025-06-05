@@ -1,9 +1,9 @@
 use std::mem::transmute;
 
+use crate::moonlight::core::*;
 use crate::moonlight::debugable::*;
 use crate::moonlight::parseable::*;
 use crate::moonlight::utils::*;
-use crate::moonlight::Moonlight;
 
 pub trait DataMemoryLoadable {
     fn load_data_memory_from(&mut self, ast: &Ast);

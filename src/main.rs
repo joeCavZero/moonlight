@@ -1,4 +1,4 @@
-use moonlight::moonlight;
+use moonlight::moonlight::core::Moonlight;
 
 pub fn main() {
     let args = std::env::args().collect::<Vec<String>>();
@@ -13,7 +13,7 @@ pub fn main() {
                     println!("Moonlight version 0.1.0");
                 }
                 _ => {
-                    let mut ml = moonlight::Moonlight::new();
+                    let mut ml = Moonlight::new();
                     ml.run(&args[1]);
                 }
             }

@@ -1,7 +1,7 @@
+use crate::moonlight::core::*;
 use crate::moonlight::debugable::*;
 use crate::moonlight::parseable::*;
 use crate::moonlight::utils::*;
-use crate::moonlight::Moonlight;
 
 pub trait SymbolTableLoadable {
     fn load_symbol_table_from(&mut self, ast: &Ast);
